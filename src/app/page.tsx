@@ -214,7 +214,7 @@ export default function HomePage() {
             {/* 상단 서브 배지 */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-[#E8F1E4] text-[#243721] border border-[#C5D7C1] mb-5 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-[#4E7545] animate-pulse" />
-              <span>자연과 배움이 머무는 곳</span>
+              <span>사람과 사람이 만나는 곳</span>
             </div>
 
             {/* 보기 좋게 꾸민 메인 타이틀 */}
