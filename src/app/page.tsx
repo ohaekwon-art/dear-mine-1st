@@ -41,7 +41,11 @@ export default function HomePage() {
     message: "",
   });
   const [emailCopied, setEmailCopied] = useState(false);
-  const [mailSentNotice, setMailSentNotice] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    type: "idle" | "success" | "error";
+    message: string;
+  }>({ type: "idle", message: "" });
 
   const handleCopyEmail = async () => {
     try {
@@ -53,31 +57,55 @@ export default function HomePage() {
     }
   };
 
-  const handleSendEmail = (e: React.FormEvent) => {
+  const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.subject.trim() || !contactForm.message.trim()) return;
 
-    const emailSubject = `[DearMine 문의 - ${contactForm.inquiryType}] ${contactForm.subject.trim()}`;
-    const emailBody = `[문의자 정보]
-• 성함/닉네임: ${contactForm.name.trim() || "미기재"}
-• 회신 이메일: ${contactForm.email.trim() || "미기재"}
-• 문의 유형: ${contactForm.inquiryType}
+    setIsSubmitting(true);
+    setSubmitResult({ type: "idle", message: "" });
 
-[문의 내용]
-${contactForm.message.trim()}
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(contactForm),
+      });
 
-------------------------------------
-※ DearMine 홈페이지에서 작성된 문의사항입니다.`;
+      const data = await response.json();
 
-    const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-      emailSubject
-    )}&body=${encodeURIComponent(emailBody)}`;
+      if (!response.ok) {
+        throw new Error(data.error || "이메일 전송에 실패했습니다.");
+      }
 
-    window.location.href = mailtoUrl;
-    setMailSentNotice(true);
-    setTimeout(() => {
-      setMailSentNotice(false);
-    }, 4500);
+      setSubmitResult({
+        type: "success",
+        message: "문의사항이 성공적으로 전달되었습니다! 확인 후 정성껏 답변드리겠습니다.",
+      });
+
+      // 폼 초기화
+      setContactForm({
+        name: "",
+        email: "",
+        inquiryType: "일반 문의",
+        subject: "",
+        message: "",
+      });
+
+      // 3초 후 모달 닫기
+      setTimeout(() => {
+        setIsContactOpen(false);
+        setSubmitResult({ type: "idle", message: "" });
+      }, 3000);
+    } catch (err: any) {
+      setSubmitResult({
+        type: "error",
+        message: err?.message || "전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAddEntry = (e: React.FormEvent) => {
@@ -873,14 +901,27 @@ ${contactForm.message.trim()}
               </button>
             </div>
 
-            {/* 발송 안내 알림 (전송 시 표시) */}
-            {mailSentNotice && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-[#E6F3E3] border border-[#A6CE9E] text-xs text-[#20401C] flex items-start gap-2.5">
-                <span className="text-base shrink-0">📬</span>
+            {/* 발송 성공 알림 */}
+            {submitResult.type === "success" && (
+              <div className="mb-4 p-4 rounded-2xl bg-[#E6F3E3] border border-[#A6CE9E] text-xs text-[#20401C] flex items-start gap-3">
+                <span className="text-xl shrink-0">✨</span>
                 <div>
-                  <p className="font-bold">기본 이메일 프로그램이 열렸습니다!</p>
-                  <p className="text-[11px] text-[#3E5C39] mt-0.5">
-                    내용을 확인하신 후 메일 앱에서 [보내기]를 눌러주시면 완료됩니다.
+                  <p className="font-bold text-sm">문의사항이 성공적으로 전송되었습니다!</p>
+                  <p className="text-xs text-[#3E5C39] mt-0.5 leading-relaxed">
+                    {submitResult.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 발송 실패 알림 */}
+            {submitResult.type === "error" && (
+              <div className="mb-4 p-4 rounded-2xl bg-[#FDEAEA] border border-[#F5B4B4] text-xs text-[#842029] flex items-start gap-3">
+                <span className="text-xl shrink-0">⚠️</span>
+                <div>
+                  <p className="font-bold text-sm">전송에 실패했습니다</p>
+                  <p className="text-xs text-[#842029]/80 mt-0.5 leading-relaxed">
+                    {submitResult.message}
                   </p>
                 </div>
               </div>
@@ -976,20 +1017,53 @@ ${contactForm.message.trim()}
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3 px-5 rounded-2xl text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 px-5 rounded-2xl text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] disabled:bg-[#687C65] disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                    />
-                  </svg>
-                  <span>이메일 보내기 (메일 앱 실행)</span>
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span>이메일 전송 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        />
+                      </svg>
+                      <span>문의사항 바로 보내기</span>
+                    </>
+                  )}
                 </button>
                 <p className="text-[11px] text-[#63795F] text-center mt-2.5 leading-relaxed">
-                  ※ 클릭하시면 기본 이메일 프로그램(Outlook, Mail, Gmail 등)이 실행되어 작성된 내용이 자동으로 입력됩니다.
+                  ※ 별도의 메일 프로그램 실행 없이 서버를 통해 즉시 발송되며, 답변은 남겨주신 이메일로 회신드립니다.
                 </p>
               </div>
             </form>
