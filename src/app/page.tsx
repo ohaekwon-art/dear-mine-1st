@@ -10,6 +10,8 @@ interface GuestbookEntry {
   date: string;
 }
 
+const CONTACT_EMAIL = "contact@dearmine.me";
+
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guestName, setGuestName] = useState("");
@@ -28,6 +30,55 @@ export default function HomePage() {
       date: "어제",
     },
   ]);
+
+  // 이메일 문의 관련 상태
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    inquiryType: "일반 문의",
+    subject: "",
+    message: "",
+  });
+  const [emailCopied, setEmailCopied] = useState(false);
+  const [mailSentNotice, setMailSentNotice] = useState(false);
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2500);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleSendEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.subject.trim() || !contactForm.message.trim()) return;
+
+    const emailSubject = `[DearMine 문의 - ${contactForm.inquiryType}] ${contactForm.subject.trim()}`;
+    const emailBody = `[문의자 정보]
+• 성함/닉네임: ${contactForm.name.trim() || "미기재"}
+• 회신 이메일: ${contactForm.email.trim() || "미기재"}
+• 문의 유형: ${contactForm.inquiryType}
+
+[문의 내용]
+${contactForm.message.trim()}
+
+------------------------------------
+※ DearMine 홈페이지에서 작성된 문의사항입니다.`;
+
+    const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+      emailSubject
+    )}&body=${encodeURIComponent(emailBody)}`;
+
+    window.location.href = mailtoUrl;
+    setMailSentNotice(true);
+    setTimeout(() => {
+      setMailSentNotice(false);
+    }, 4500);
+  };
 
   const handleAddEntry = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,16 +126,16 @@ export default function HomePage() {
             </div>
             <div>
               <span className="font-extrabold text-lg sm:text-xl text-[#1B2B19] tracking-tight group-hover:text-[#385133] transition-colors">
-                권오애
+                DearMine
               </span>
               <span className="hidden sm:inline-block ml-2 text-xs font-medium text-[#576D53] bg-[#E9F0E6] px-2 py-0.5 rounded-full border border-[#D0DEC9]">
-                자연과 쉼
+                나를 찾아서
               </span>
             </div>
           </button>
 
           {/* 데스크톱 메뉴 */}
-          <nav className="hidden md:flex items-center gap-7 text-sm font-semibold text-[#3C5238]">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-[#3C5238]">
             <button
               onClick={() => scrollToSection("about")}
               className="hover:text-[#1B2B19] transition-colors cursor-pointer"
@@ -108,6 +159,25 @@ export default function HomePage() {
               className="hover:text-[#1B2B19] transition-colors cursor-pointer"
             >
               방명록
+            </button>
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#273B24] bg-[#E8F1E4] hover:bg-[#D7E6D3] border border-[#C5D7C1] transition-all cursor-pointer shadow-2xs"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-[#3D5639]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span>문의하기</span>
             </button>
             <button
               onClick={() => scrollToSection("guestbook")}
@@ -174,6 +244,28 @@ export default function HomePage() {
               className="block w-full text-left px-3 py-2 rounded-md font-medium text-[#283C25] hover:bg-[#E9F0E6]"
             >
               방명록
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setIsContactOpen(true);
+              }}
+              className="w-full text-left px-3 py-2.5 rounded-lg font-bold text-[#1B2A18] bg-[#E8F1E4] hover:bg-[#D7E6D3] border border-[#C5D7C1] flex items-center gap-2"
+            >
+              <svg
+                className="w-4 h-4 text-[#354D31]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span>이메일 문의하기</span>
             </button>
           </div>
         )}
@@ -269,10 +361,10 @@ export default function HomePage() {
             </p>
 
             {/* 액션 버튼 그룹 */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={() => scrollToSection("about")}
-                className="w-full sm:w-auto px-7 py-3 rounded-full text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>정원 둘러보기</span>
                 <svg
@@ -291,9 +383,28 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => scrollToSection("guestbook")}
-                className="w-full sm:w-auto px-7 py-3 rounded-full text-sm font-bold text-[#283C25] bg-[#EAF2E7] hover:bg-[#D9E6D5] border border-[#BFD4BA] transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-bold text-[#283C25] bg-[#EAF2E7] hover:bg-[#D9E6D5] border border-[#BFD4BA] transition-all cursor-pointer"
               >
                 따뜻한 인사 남기기
+              </button>
+              <button
+                onClick={() => setIsContactOpen(true)}
+                className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-bold text-[#1F331C] bg-white hover:bg-[#F3F7F1] border border-[#BFD4BA] hover:border-[#82A37B] shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer group"
+              >
+                <svg
+                  className="w-4 h-4 text-[#43613D] group-hover:scale-110 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                <span>이메일 문의하기</span>
               </button>
             </div>
           </div>
@@ -554,6 +665,54 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+
+            {/* 이메일 1:1 비공개 문의 안내 카드 */}
+            <div className="mt-12 bg-white/95 rounded-3xl p-6 sm:p-8 border border-[#CADBC6] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F1E4] text-[#2C4128] flex items-center justify-center shrink-0 shadow-2xs">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-[#1B2A18]">
+                    개인적인 문의사항이나 조용한 메시지가 있으신가요?
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#4E644A] mt-1 leading-relaxed">
+                    공개 방명록 외에 비공개로 전하고 싶은 말씀, 제휴 및 협업 문의는 이메일을 남겨주시면 정성껏 답변드리겠습니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsContactOpen(true)}
+                className="w-full sm:w-auto px-6 py-3 rounded-full text-xs sm:text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] shadow-sm hover:shadow-md transition-all shrink-0 cursor-pointer flex items-center justify-center gap-2 group"
+              >
+                <span>이메일 문의하기</span>
+                <svg
+                  className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </section>
       </main>
@@ -579,9 +738,30 @@ export default function HomePage() {
             </div>
           </div>
 
-          <p className="text-xs text-[#95AB91]">
-            © {new Date().getFullYear()} 권오애. All rights reserved.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
+            <button
+              onClick={() => setIsContactOpen(true)}
+              className="text-xs font-semibold text-[#D5E3D1] hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-[#40563C] transition-colors cursor-pointer"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-[#9EC098]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span>이메일 문의하기</span>
+            </button>
+            <p className="text-xs text-[#95AB91]">
+              © {new Date().getFullYear()} 권오애. All rights reserved.
+            </p>
+          </div>
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -604,6 +784,218 @@ export default function HomePage() {
           </button>
         </div>
       </footer>
+
+      {/* 화면 우측 하단 고정 플로팅 문의하기 버튼 */}
+      <div className="fixed bottom-6 right-5 sm:right-8 z-40">
+        <button
+          onClick={() => setIsContactOpen(true)}
+          className="group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full bg-[#283C25] text-white shadow-xl hover:bg-[#182616] hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer border border-[#455E41]"
+          aria-label="이메일 문의하기"
+        >
+          <div className="relative flex items-center justify-center">
+            <svg
+              className="w-5 h-5 text-[#E6F0E4] group-hover:scale-110 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#84B078] rounded-full animate-ping" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#84B078] rounded-full" />
+          </div>
+          <span className="text-xs sm:text-sm font-bold tracking-tight">이메일 문의</span>
+        </button>
+      </div>
+
+      {/* 이메일 문의 팝업 모달 다이얼로그 */}
+      {isContactOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setIsContactOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg bg-[#FAFBF9] rounded-3xl border border-[#D0DEC9] shadow-2xl p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto"
+          >
+            {/* 모달 닫기 버튼 */}
+            <button
+              onClick={() => setIsContactOpen(false)}
+              className="absolute top-5 right-5 p-2 rounded-full text-[#4E644A] hover:text-[#1B2A18] hover:bg-[#EAF2E7] transition-colors cursor-pointer"
+              aria-label="닫기"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* 모달 헤더 */}
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-[#E8F1E4] text-[#2C4128] flex items-center justify-center shadow-2xs">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-[#1B2A18] tracking-tight">
+                  이메일 문의사항 남기기
+                </h3>
+                <p className="text-xs text-[#52684F]">
+                  전하고 싶은 말씀이나 궁금한 점을 적어주세요.
+                </p>
+              </div>
+            </div>
+
+            {/* 수신처 이메일 복사 영역 */}
+            <div className="my-4 p-3.5 rounded-2xl bg-[#EFF5ED] border border-[#D5E3D1] flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-[#32492E] min-w-0">
+                <span className="font-semibold text-[#5B7357] shrink-0">수신 이메일:</span>
+                <span className="font-mono font-bold truncate text-[#1B2A18]">{CONTACT_EMAIL}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#1B2A18] bg-white border border-[#C5D7C1] hover:bg-[#F3F8F1] transition-all cursor-pointer shrink-0 shadow-2xs"
+              >
+                {emailCopied ? "✓ 복사완료" : "주소 복사"}
+              </button>
+            </div>
+
+            {/* 발송 안내 알림 (전송 시 표시) */}
+            {mailSentNotice && (
+              <div className="mb-4 p-3.5 rounded-2xl bg-[#E6F3E3] border border-[#A6CE9E] text-xs text-[#20401C] flex items-start gap-2.5">
+                <span className="text-base shrink-0">📬</span>
+                <div>
+                  <p className="font-bold">기본 이메일 프로그램이 열렸습니다!</p>
+                  <p className="text-[11px] text-[#3E5C39] mt-0.5">
+                    내용을 확인하신 후 메일 앱에서 [보내기]를 눌러주시면 완료됩니다.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 문의 작성 폼 */}
+            <form onSubmit={handleSendEmail} className="space-y-4">
+              {/* 문의 유형 선택 */}
+              <div>
+                <label className="block text-xs font-bold text-[#344830] mb-1.5">
+                  문의 유형
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {["일반 문의", "안부 & 응원", "제휴 & 협업", "기타 문의"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setContactForm({ ...contactForm, inquiryType: type })}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer border ${contactForm.inquiryType === type
+                        ? "bg-[#283C25] text-white border-[#283C25] shadow-xs"
+                        : "bg-white text-[#4A6046] border-[#D0DEC9] hover:bg-[#EFF5ED]"
+                        }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 작성자 정보 (이름, 회신 이메일) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="contact-name" className="block text-xs font-bold text-[#344830] mb-1">
+                    성함 또는 닉네임
+                  </label>
+                  <input
+                    id="contact-name"
+                    type="text"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    placeholder="예: 홍길동"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#CCD8C8] bg-white text-[#1B2A18] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#587550] transition-all"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contact-email" className="block text-xs font-bold text-[#344830] mb-1">
+                    회신받을 이메일 주소
+                  </label>
+                  <input
+                    id="contact-email"
+                    type="email"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    placeholder="example@email.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#CCD8C8] bg-white text-[#1B2A18] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#587550] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* 문의 제목 */}
+              <div>
+                <label htmlFor="contact-subject" className="block text-xs font-bold text-[#344830] mb-1">
+                  문의 제목 <span className="text-[#A43B3B]">*</span>
+                </label>
+                <input
+                  id="contact-subject"
+                  type="text"
+                  required
+                  value={contactForm.subject}
+                  onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                  placeholder="문의하실 제목을 입력해주세요"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#CCD8C8] bg-white text-[#1B2A18] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#587550] transition-all"
+                />
+              </div>
+
+              {/* 문의 내용 */}
+              <div>
+                <label htmlFor="contact-message" className="block text-xs font-bold text-[#344830] mb-1">
+                  문의 내용 <span className="text-[#A43B3B]">*</span>
+                </label>
+                <textarea
+                  id="contact-message"
+                  required
+                  rows={4}
+                  value={contactForm.message}
+                  onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                  placeholder="궁금하신 내용이나 남기실 말씀을 상세히 적어주세요."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#CCD8C8] bg-white text-[#1B2A18] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#587550] transition-all resize-none"
+                />
+              </div>
+
+              {/* 하단 버튼 및 안내 */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3 px-5 rounded-2xl text-sm font-bold text-white bg-[#283C25] hover:bg-[#1A2818] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                  <span>이메일 보내기 (메일 앱 실행)</span>
+                </button>
+                <p className="text-[11px] text-[#63795F] text-center mt-2.5 leading-relaxed">
+                  ※ 클릭하시면 기본 이메일 프로그램(Outlook, Mail, Gmail 등)이 실행되어 작성된 내용이 자동으로 입력됩니다.
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
